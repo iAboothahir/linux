@@ -344,6 +344,7 @@
 			regulator-enable-ramp-delay = <250>;
 			regulator-ramp-delay = <0>;
 			regulator-allow-set-load;
+			regulator-system-load = <800000>;
 		};
 
 		vreg_l6b_3p3: l6 {
