@@ -31,6 +31,8 @@
 
 &bq27441_fg {
 	monitored-battery = <&battery>;
+&pmi8998_fg {
+	qcom,battery-capacity-ua = <3700000>;
 };
 
 &rmi4_f12 {
