@@ -112,3 +112,11 @@ config INTERCONNECT_QCOM_SM8250
 
 config INTERCONNECT_QCOM_SMD_RPM
 	tristate
+
+config INTERCONNECT_QCOM_SPDM_TZ
+	tristate "Qualcomm SPDM TZ interconnect driver"
+	depends on INTERCONNECT_QCOM || COMPILE_TEST
+	help
+	  Say y here to support the System Performance Dynamic Monitoring
+	  (SPDM) interconnect driver which controls the scaling of some
+	  Qualcomm SoCs' Cache Coherent Interconnect.

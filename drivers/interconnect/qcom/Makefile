@@ -13,6 +13,7 @@ qnoc-sdx55-objs				:= sdx55.o
 qnoc-sm8150-objs			:= sm8150.o
 qnoc-sm8250-objs			:= sm8250.o
 icc-smd-rpm-objs			:= smd-rpm.o icc-rpm.o
+icc-spdm-tz-objs			:= spdm-tz.o
 
 obj-$(CONFIG_INTERCONNECT_QCOM_BCM_VOTER) += icc-bcm-voter.o
 obj-$(CONFIG_INTERCONNECT_QCOM_MSM8916) += qnoc-msm8916.o
@@ -27,3 +28,4 @@ obj-$(CONFIG_INTERCONNECT_QCOM_SDX55) += qnoc-sdx55.o
 obj-$(CONFIG_INTERCONNECT_QCOM_SM8150) += qnoc-sm8150.o
 obj-$(CONFIG_INTERCONNECT_QCOM_SM8250) += qnoc-sm8250.o
 obj-$(CONFIG_INTERCONNECT_QCOM_SMD_RPM) += icc-smd-rpm.o
+obj-$(CONFIG_INTERCONNECT_QCOM_SPDM_TZ) += icc-spdm-tz.o
