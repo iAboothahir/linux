@@ -51,6 +51,12 @@ enum qcom_scm_ice_cipher {
 	QCOM_SCM_ICE_CIPHER_AES_256_CBC = 4,
 };
 
+struct qcom_scm_spdm_level {
+	u32 low[2];
+	u32 med[2];
+	u32 high[2];
+};
+
 #define QCOM_SCM_VMID_HLOS       0x3
 #define QCOM_SCM_VMID_MSS_MSA    0xF
 #define QCOM_SCM_VMID_WLAN       0x18
@@ -109,6 +115,26 @@ extern int qcom_scm_hdcp_req(struct qcom_scm_hdcp_req *req, u32 req_cnt,
 			     u32 *resp);
 
 extern int qcom_scm_qsmmu500_wait_safe_toggle(bool en);
+
+/* SPDM functions */
+extern int qcom_scm_spdm_cfg_bw_votes(u32 spdm_client, u32 up, u32 down,
+				      u32 max);
+extern int qcom_scm_spdm_cfg_cci_resp_time(u32 spdm_client,
+					   const struct qcom_scm_spdm_level *r);
+extern int qcom_scm_spdm_cfg_cci_thresh(u32 spdm_client, u32 freq);
+extern int qcom_scm_spdm_get_client_bw(u32 spdm_client);
+
+extern int qcom_scm_spdm_cfg_filter(u32 spdm_client, u32 aup, u32 adn,
+				    u32 bucket_sz);
+extern int qcom_scm_spdm_cfg_ports(u32 spdm_client, u32 *ports, u32 num_ports);
+extern int qcom_scm_spdm_cfg_single_port(u32 spdm_client, u32 port);
+extern int qcom_scm_spdm_cfg_perflevel(u32 spdm_client, u32 *pl_freqs,
+				       u32 num_freqs);
+extern int qcom_scm_spdm_cfg_reject_rate(u32 spdm_client,
+					 const struct qcom_scm_spdm_level *r);
+extern int qcom_scm_spdm_cfg_resp_time(u32 spdm_client,
+				       const struct qcom_scm_spdm_level *r);
+extern int qcom_scm_spdm_enable(u32 spdm_client, bool enable);
 #else
 
 #include <linux/errno.h>
@@ -170,5 +196,36 @@ static inline int qcom_scm_hdcp_req(struct qcom_scm_hdcp_req *req, u32 req_cnt,
 
 static inline int qcom_scm_qsmmu500_wait_safe_toggle(bool en)
 		{ return -ENODEV; }
+
+static inline int qcom_scm_spdm_cfg_bw_votes(u32 spdm_client, u32 up,
+					     u32 down, u32 max)
+		{ return -EINVAL; }
+static inline int qcom_scm_spdm_cfg_cci_resp_time(u32 spdm_client,
+						  const struct qcom_scm_spdm_level *r)
+		{ return -EINVAL; }
+static inline int qcom_scm_spdm_cfg_cci_thresh(u32 spdm_client, u32 freq)
+		{ return -EINVAL; }
+static inline int qcom_scm_spdm_get_client_bw(u32 spdm_client)
+		{ return -EINVAL; }
+static inline int qcom_scm_spdm_cfg_filter(u32 spdm_client, u32 aup,
+					   u32 adn, u32 bucket_sz)
+		{ return -EINVAL; }
+static inline int qcom_scm_spdm_cfg_ports(u32 spdm_client, u32 *ports,
+					  u32 num_ports)
+		{ return -EINVAL; }
+static inline int qcom_scm_spdm_cfg_single_port(u32 spdm_client, u32 port)
+		{ return -EINVAL; }
+static inline int qcom_scm_spdm_cfg_perflevel(u32 spdm_client, u32 *pl_freqs,
+					      u32 num_freqs)
+		{ return -EINVAL; }
+static inline int qcom_scm_spdm_cfg_reject_rate(u32 spdm_client,
+						const struct qcom_scm_spdm_level *r)
+		{ return -EINVAL; }
+static inline int qcom_scm_spdm_cfg_resp_time(u32 spdm_client,
+					      const struct qcom_scm_spdm_level *r)
+		{ return -EINVAL; }
+
+static inline int qcom_scm_spdm_enable(u32 spdm_client, bool enable)
+		{ return -EINVAL; }
 #endif
 #endif

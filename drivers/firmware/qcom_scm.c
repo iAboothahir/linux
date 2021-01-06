@@ -22,10 +22,6 @@
 static bool download_mode = IS_ENABLED(CONFIG_QCOM_SCM_DOWNLOAD_MODE_DEFAULT);
 module_param(download_mode, bool, 0);
 
-#define SCM_HAS_CORE_CLK	BIT(0)
-#define SCM_HAS_IFACE_CLK	BIT(1)
-#define SCM_HAS_BUS_CLK		BIT(2)
-
 struct qcom_scm {
 	struct device *dev;
 	struct clk *core_clk;
@@ -176,8 +172,8 @@ static inline enum qcom_scm_convention __get_convention(void)
  * Sends a command to the SCM and waits for the command to finish processing.
  * This should *only* be called in pre-emptible context.
  */
-static int qcom_scm_call(struct device *dev, const struct qcom_scm_desc *desc,
-			 struct qcom_scm_res *res)
+int qcom_scm_call(struct device *dev, const struct qcom_scm_desc *desc,
+		  struct qcom_scm_res *res)
 {
 	might_sleep();
 	switch (__get_convention()) {
@@ -1252,6 +1248,12 @@ static int qcom_scm_probe(struct platform_device *pdev)
 	if (download_mode)
 		qcom_scm_set_download_mode(true);
 
+	if (flags & (SCM_HAS_SPDM_SMC | SCM_HAS_SPDM_HVC)) {
+		ret = __qcom_scm_spdm_init(&pdev->dev, flags);
+		if (ret)
+			dev_warn(&pdev->dev, "cannot initialize SPDM\n");
+	}
+
 	return 0;
 }
 
@@ -1283,6 +1285,7 @@ static const struct of_device_id qcom_scm_dt_match[] = {
 	},
 	{ .compatible = "qcom,scm-msm8994" },
 	{ .compatible = "qcom,scm-msm8996" },
+	{ .compatible = "qcom,scm-msm8998", .data = (void *)(SCM_HAS_SPDM_SMC) },
 	{ .compatible = "qcom,scm" },
 	{}
 };

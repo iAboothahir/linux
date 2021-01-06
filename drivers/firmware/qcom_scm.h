@@ -93,6 +93,28 @@ extern int scm_legacy_call(struct device *dev, const struct qcom_scm_desc *desc,
 #define QCOM_SCM_SVC_INFO		0x06
 #define QCOM_SCM_INFO_IS_CALL_AVAIL	0x01
 
+#define QCOM_SCM_SVC_SPDM		0x09
+#define QCOM_SCM_SPDM_CMD		0x04
+#define QCOM_SCM_SPDM_GET_VERSION	0x00
+#define QCOM_SCM_SPDM_GET_BW_ALL	0x01
+#define QCOM_SCM_SPDM_GET_BW_SPECIFIC	0x02
+#define QCOM_SCM_SPDM_ENABLE		0x03
+#define QCOM_SCM_SPDM_DISABLE		0x04
+#define QCOM_SCM_SPDM_CFG_PORTS		0x05
+#define QCOM_SCM_SPDM_CFG_FILTER	0x06
+#define QCOM_SCM_SPDM_CFG_PERFLEVEL	0x07
+#define QCOM_SCM_SPDM_CFG_REJR_LOW	0x08
+#define QCOM_SCM_SPDM_CFG_REJR_MED	0x09
+#define QCOM_SCM_SPDM_CFG_REJR_HIGH	0x0a
+#define QCOM_SCM_SPDM_CFG_RESPT_LOW	0x0b
+#define QCOM_SCM_SPDM_CFG_RESPT_MED	0x0c
+#define QCOM_SCM_SPDM_CFG_RESPT_HIGH	0x0d
+#define QCOM_SCM_SPDM_CFG_CCIRESPT_LOW	0x0e
+#define QCOM_SCM_SPDM_CFG_CCIRESPT_MED	0x0f
+#define QCOM_SCM_SPDM_CFG_CCIRESPT_HIGH	0x10
+#define QCOM_SCM_SPDM_CFG_MAXCCIFREQ	0x11
+#define QCOM_SCM_SPDM_CFG_BW_VOTES	0x12
+
 #define QCOM_SCM_SVC_MP				0x0c
 #define QCOM_SCM_MP_RESTORE_SEC_CFG		0x02
 #define QCOM_SCM_MP_IOMMU_SECURE_PTBL_SIZE	0x03
@@ -116,6 +138,16 @@ extern int scm_legacy_call(struct device *dev, const struct qcom_scm_desc *desc,
 #define QCOM_SCM_SMMU_CONFIG_ERRATA1_CLIENT_ALL	0x02
 
 extern void __qcom_scm_init(void);
+int qcom_scm_call(struct device *dev, const struct qcom_scm_desc *desc,
+		  struct qcom_scm_res *res);
+int __qcom_scm_spdm_init(struct device *dev, unsigned long flags);
+
+/* Driver internal flags */
+#define SCM_HAS_CORE_CLK	BIT(0)
+#define SCM_HAS_IFACE_CLK	BIT(1)
+#define SCM_HAS_BUS_CLK		BIT(2)
+#define SCM_HAS_SPDM_SMC	BIT(3)
+#define SCM_HAS_SPDM_HVC	BIT(4)
 
 /* common error codes */
 #define QCOM_SCM_V2_EBUSY	-12
