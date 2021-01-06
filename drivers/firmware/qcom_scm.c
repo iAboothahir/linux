@@ -1175,7 +1175,7 @@ EXPORT_SYMBOL(qcom_scm_is_available);
 static int qcom_scm_probe(struct platform_device *pdev)
 {
 	struct qcom_scm *scm;
-	unsigned long clks;
+	unsigned long flags;
 	int ret;
 
 	scm = devm_kzalloc(&pdev->dev, sizeof(*scm), GFP_KERNEL);
@@ -1186,14 +1186,14 @@ static int qcom_scm_probe(struct platform_device *pdev)
 	if (ret < 0)
 		return ret;
 
-	clks = (unsigned long)of_device_get_match_data(&pdev->dev);
+	flags = (unsigned long)of_device_get_match_data(&pdev->dev);
 
 	scm->core_clk = devm_clk_get(&pdev->dev, "core");
 	if (IS_ERR(scm->core_clk)) {
 		if (PTR_ERR(scm->core_clk) == -EPROBE_DEFER)
 			return PTR_ERR(scm->core_clk);
 
-		if (clks & SCM_HAS_CORE_CLK) {
+		if (flags & SCM_HAS_CORE_CLK) {
 			dev_err(&pdev->dev, "failed to acquire core clk\n");
 			return PTR_ERR(scm->core_clk);
 		}
@@ -1206,7 +1206,7 @@ static int qcom_scm_probe(struct platform_device *pdev)
 		if (PTR_ERR(scm->iface_clk) == -EPROBE_DEFER)
 			return PTR_ERR(scm->iface_clk);
 
-		if (clks & SCM_HAS_IFACE_CLK) {
+		if (flags & SCM_HAS_IFACE_CLK) {
 			dev_err(&pdev->dev, "failed to acquire iface clk\n");
 			return PTR_ERR(scm->iface_clk);
 		}
@@ -1219,7 +1219,7 @@ static int qcom_scm_probe(struct platform_device *pdev)
 		if (PTR_ERR(scm->bus_clk) == -EPROBE_DEFER)
 			return PTR_ERR(scm->bus_clk);
 
-		if (clks & SCM_HAS_BUS_CLK) {
+		if (flags & SCM_HAS_BUS_CLK) {
 			dev_err(&pdev->dev, "failed to acquire bus clk\n");
 			return PTR_ERR(scm->bus_clk);
 		}
