@@ -592,6 +592,14 @@
 			qcom,pll-override = <0x1200020>;
 			qcom,spare-data = <1>;
 		};
+		opp-0 {
+			opp-hz = /bits/ 64 <0>;
+			required-opps = <&cprh_opp1>;
+		};
+		opp-1 {
+			opp-hz = /bits/ 64 <1>;
+			required-opps = <&cprh_opp1>;
+		};
 	};
 
 	cpu_silver_opp_table: cpu-silver-opp-table {
@@ -734,6 +742,14 @@
 			opp-hz = /bits/ 64 <300000000>;
 			required-opps = <&cprh_opp1>;
 			qcom,pll-override = <0x1200020>;
+		};
+		opp-0 {
+			opp-hz = /bits/ 64 <0>;
+			required-opps = <&cprh_opp1>;
+		};
+		opp-1 {
+			opp-hz = /bits/ 64 <1>;
+			required-opps = <&cprh_opp1>;
 		};
 	};
 
