@@ -8,19 +8,10 @@ http://github.com/freedreno/envytools/
 git clone https://github.com/freedreno/envytools.git
 
 The rules-ng-ng source files this header was generated from are:
-- /home/robclark/src/envytools/rnndb/msm.xml                 (    676 bytes, from 2018-07-03 19:37:13)
-- /home/robclark/src/envytools/rnndb/freedreno_copyright.xml (   1572 bytes, from 2018-07-03 19:37:13)
-- /home/robclark/src/envytools/rnndb/mdp/mdp4.xml            (  20915 bytes, from 2018-07-03 19:37:13)
-- /home/robclark/src/envytools/rnndb/mdp/mdp_common.xml      (   2849 bytes, from 2018-07-03 19:37:13)
-- /home/robclark/src/envytools/rnndb/mdp/mdp5.xml            (  37411 bytes, from 2018-07-03 19:37:13)
-- /home/robclark/src/envytools/rnndb/dsi/dsi.xml             (  37239 bytes, from 2018-07-03 19:37:13)
-- /home/robclark/src/envytools/rnndb/dsi/sfpb.xml            (    602 bytes, from 2018-07-03 19:37:13)
-- /home/robclark/src/envytools/rnndb/dsi/mmss_cc.xml         (   1686 bytes, from 2018-07-03 19:37:13)
-- /home/robclark/src/envytools/rnndb/hdmi/qfprom.xml         (    600 bytes, from 2018-07-03 19:37:13)
-- /home/robclark/src/envytools/rnndb/hdmi/hdmi.xml           (  41799 bytes, from 2018-07-03 19:37:13)
-- /home/robclark/src/envytools/rnndb/edp/edp.xml             (  10416 bytes, from 2018-07-03 19:37:13)
+- /local/mnt2/workspace2/abhinav/mesa_tool/mesa/src/freedreno/registers/dsi/dsi.xml             (  17500 bytes, from 2021-07-22 02:35:56)
+- /local/mnt2/workspace2/abhinav/mesa_tool/mesa/src/freedreno/registers/freedreno_copyright.xml (   1572 bytes, from 2021-07-13 18:03:11)
 
-Copyright (C) 2013-2018 by the following authors:
+Copyright (C) 2013-2021 by the following authors:
 - Rob Clark <robdclark@gmail.com> (robclark)
 - Ilia Mirkin <imirkin@alum.mit.edu> (imirkin)
 
@@ -95,6 +86,32 @@ enum dsi_lane_swap {
 	LANE_SWAP_1032 = 5,
 	LANE_SWAP_2103 = 6,
 	LANE_SWAP_3210 = 7,
+};
+
+enum video_config_bpp {
+	VIDEO_CONFIG_18BPP = 0,
+	VIDEO_CONFIG_24BPP = 1,
+};
+
+enum video_pattern_sel {
+	VID_PRBS = 0,
+	VID_INCREMENTAL = 1,
+	VID_FIXED = 2,
+	VID_MDSS_GENERAL_PATTERN = 3,
+};
+
+enum cmd_mdp_stream0_pattern_sel {
+	CMD_MDP_PRBS = 0,
+	CMD_MDP_INCREMENTAL = 1,
+	CMD_MDP_FIXED = 2,
+	CMD_MDP_MDSS_GENERAL_PATTERN = 3,
+};
+
+enum cmd_dma_pattern_sel {
+	CMD_DMA_PRBS = 0,
+	CMD_DMA_INCREMENTAL = 1,
+	CMD_DMA_FIXED = 2,
+	CMD_DMA_CUSTOM_PATTERN_DMA_FIFO = 3,
 };
 
 #define DSI_IRQ_CMD_DMA_DONE					0x00000001
@@ -440,6 +457,53 @@ static inline uint32_t DSI_LANE_SWAP_CTRL_DLN_SWAP_SEL(enum dsi_lane_swap val)
 
 #define REG_DSI_PHY_RESET					0x00000128
 #define DSI_PHY_RESET_RESET					0x00000001
+
+#define REG_DSI_TEST_PATTERN_GEN_VIDEO_INIT_VAL			0x00000160
+
+#define REG_DSI_TPG_MAIN_CONTROL				0x00000198
+#define DSI_TPG_MAIN_CONTROL_CHECKERED_RECTANGLE_PATTERN	0x00000100
+
+#define REG_DSI_TPG_VIDEO_CONFIG				0x000001a0
+#define DSI_TPG_VIDEO_CONFIG_BPP__MASK				0x00000003
+#define DSI_TPG_VIDEO_CONFIG_BPP__SHIFT				0
+static inline uint32_t DSI_TPG_VIDEO_CONFIG_BPP(enum video_config_bpp val)
+{
+	return ((val) << DSI_TPG_VIDEO_CONFIG_BPP__SHIFT) & DSI_TPG_VIDEO_CONFIG_BPP__MASK;
+}
+#define DSI_TPG_VIDEO_CONFIG_RGB				0x00000004
+
+#define REG_DSI_TEST_PATTERN_GEN_CTRL				0x00000158
+#define DSI_TEST_PATTERN_GEN_CTRL_CMD_DMA_PATTERN_SEL__MASK	0x00030000
+#define DSI_TEST_PATTERN_GEN_CTRL_CMD_DMA_PATTERN_SEL__SHIFT	16
+static inline uint32_t DSI_TEST_PATTERN_GEN_CTRL_CMD_DMA_PATTERN_SEL(enum cmd_dma_pattern_sel val)
+{
+	return ((val) << DSI_TEST_PATTERN_GEN_CTRL_CMD_DMA_PATTERN_SEL__SHIFT) & DSI_TEST_PATTERN_GEN_CTRL_CMD_DMA_PATTERN_SEL__MASK;
+}
+#define DSI_TEST_PATTERN_GEN_CTRL_CMD_MDP_STREAM0_PATTERN_SEL__MASK	0x00000300
+#define DSI_TEST_PATTERN_GEN_CTRL_CMD_MDP_STREAM0_PATTERN_SEL__SHIFT	8
+static inline uint32_t DSI_TEST_PATTERN_GEN_CTRL_CMD_MDP_STREAM0_PATTERN_SEL(enum cmd_mdp_stream0_pattern_sel val)
+{
+	return ((val) << DSI_TEST_PATTERN_GEN_CTRL_CMD_MDP_STREAM0_PATTERN_SEL__SHIFT) & DSI_TEST_PATTERN_GEN_CTRL_CMD_MDP_STREAM0_PATTERN_SEL__MASK;
+}
+#define DSI_TEST_PATTERN_GEN_CTRL_VIDEO_PATTERN_SEL__MASK	0x00000030
+#define DSI_TEST_PATTERN_GEN_CTRL_VIDEO_PATTERN_SEL__SHIFT	4
+static inline uint32_t DSI_TEST_PATTERN_GEN_CTRL_VIDEO_PATTERN_SEL(enum video_pattern_sel val)
+{
+	return ((val) << DSI_TEST_PATTERN_GEN_CTRL_VIDEO_PATTERN_SEL__SHIFT) & DSI_TEST_PATTERN_GEN_CTRL_VIDEO_PATTERN_SEL__MASK;
+}
+#define DSI_TEST_PATTERN_GEN_CTRL_TPG_DMA_FIFO_MODE		0x00000004
+#define DSI_TEST_PATTERN_GEN_CTRL_CMD_DMA_TPG_EN		0x00000002
+#define DSI_TEST_PATTERN_GEN_CTRL_EN				0x00000001
+
+#define REG_DSI_TEST_PATTERN_GEN_CMD_MDP_INIT_VAL0		0x00000168
+
+#define REG_DSI_TEST_PATTERN_GEN_CMD_STREAM0_TRIGGER		0x00000180
+#define DSI_TEST_PATTERN_GEN_CMD_STREAM0_TRIGGER_SW_TRIGGER	0x00000001
+
+#define REG_DSI_TPG_MAIN_CONTROL2				0x0000019c
+#define DSI_TPG_MAIN_CONTROL2_CMD_MDP0_CHECKERED_RECTANGLE_PATTERN	0x00000080
+#define DSI_TPG_MAIN_CONTROL2_CMD_MDP1_CHECKERED_RECTANGLE_PATTERN	0x00010000
+#define DSI_TPG_MAIN_CONTROL2_CMD_MDP2_CHECKERED_RECTANGLE_PATTERN	0x02000000
 
 #define REG_DSI_T_CLK_PRE_EXTEND				0x0000017c
 #define DSI_T_CLK_PRE_EXTEND_INC_BY_2_BYTECLK			0x00000001
