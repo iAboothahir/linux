@@ -439,6 +439,7 @@ static void dsi_mgr_bridge_pre_enable(struct drm_bridge *bridge)
 									ret);
 			goto panel_en_fail;
 		}
+		msm_dsi_manager_tpg_enable();
 	}
 
 	return;
