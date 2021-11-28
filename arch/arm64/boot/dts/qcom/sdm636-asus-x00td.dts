@@ -1,0 +1,621 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * Copyright (c) 2020, Alexey Minnekhanov <alexey.min@gmail.com>
+ */
+
+/dts-v1/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/linux-event-codes.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/pinctrl/qcom,pmic-gpio.h>
+#include "sdm636.dtsi"
+#include "pm660.dtsi"
+#include "pm660l.dtsi"
+
+/delete-node/ &qhee_code;
+/delete-node/ &smem_region;
+/delete-node/ &tz_mem;
+/delete-node/ &mpss_region;
+/delete-node/ &mba_region;
+/delete-node/ &adsp_region;
+/delete-node/ &buffer_mem;
+/delete-node/ &zap_shader_region;
+
+/ {
+	model = "Asus Zenfone Max Pro M1";
+	compatible = "asus,x00td", "qcom,sdm660", "qcom, sdm636";
+	qcom,msm-id = <0x159 0x0>;
+	qcom,board-id = <0x1000b 0x0>;
+	qcom,pmic-id = <0x1001b 0x101011a 0x0 0x0 0x1001b 0x201011a 0x0 0x0 0x1001b 0x102001a 0x0 0x0>;
+	
+	aliases {
+		serial0 = &blsp1_uart2;
+		sdhc1 = &sdhc_1; /* SDC1 eMMC slot */
+		sdhc2 = &sdhc_2; /* external sdcard */
+	};
+
+	chosen {		
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		stdout-path = "framebuffer0";
+
+		framebuffer0: framebuffer@0x9d400000 {
+		compatible = "simple-framebuffer";
+		reg = <0x0 0x9d400000 0x0 (1080 * 2160 * 4)>;
+		status = "disabled";
+		width = <1080>;
+		height = <2160>;
+		stride = <(1080 * 4)>;
+		format = "a8r8g8b8";
+		};
+	};
+
+	gpio_keys {
+		/* compatible = "gpio-keys"; does not work */
+		compatible = "gpio-keys-polled";
+		poll-interval = <100>; /* needed only for gpio-keys-polled */
+		label = "Volume up";
+		autorepeat;
+		pinctrl-names = "default";
+		pinctrl-0 = <&vol_up_pin_active>;
+
+		vol-up {
+			label = "Volume up";
+			gpios = <&pm660l_gpios 44 GPIO_ACTIVE_LOW>;
+			linux,input-type = <EV_KEY>;
+			linux,code = <KEY_VOLUMEUP>;
+			debounce-interval = <15>;
+			/* wakeup-source; Note: gpio-keys-polled does not support this */
+		};
+	};
+
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+		wlan_msa_guard: wlan-msa-guard@85600000 {
+			reg = <0x0 0x85600000 0x0 0x100000>;
+			no-map;
+		};
+
+		wlan_msa_mem: wlan-msa-mem@85700000 {
+			reg = <0x0 0x85700000 0x0 0x100000>;
+			no-map;
+		};
+
+		/* removed_regions in downstream / qhee_code */
+		removed_region: removed_region@85800000 {
+			reg = <0x0 0x85800000 0x0 0x600000>;
+			no-map;
+		};
+
+		smem_region: smem_memory@86000000 {
+			reg = <0x0 0x86000000 0x0 0x200000>;
+			no-map;
+		};
+
+		/* tz_mem */
+		tz_mem: tz_memory@86200000 {
+			reg = <0x0 0x86200000 0x0 0x2D00000>;
+			/* 0x86200000 + 0x2D00000 = 0x88F00000 */
+			no-map;
+		};
+
+		/* downstream has this: */
+		/* removed_regions@85800000 {
+			reg = <0x0 0x85800000 0x0 0x3700000>;
+			no-map;
+		}; */
+		/* which covers region starting from removed_regions to 0x88F00000 (end of our tz_mem) */
+
+		/* modem_fw_region */
+		mpss_region: modem_fw_region@8ac00000 {
+			reg = <0x0 0x8ac00000 0x0 0x7e00000>;
+			no-map;
+		};
+
+		/* adsp_fw_region */
+		adsp_region: adsp@92a00000 {
+			reg = <0x0 0x92a00000 0x0 0x1e00000>;
+			no-map;
+		};
+
+		/* pil_mba_mem */
+		mba_region: mba@94800000 {
+			reg = <0x0 0x94800000 0x0 0x200000>;
+			no-map;
+		};
+
+		/* cdsp_fw_region */
+		buffer_mem: buffer_region@94a00000 {
+			reg = <0x0 0x94a00000 0x0 0x600000>;
+			no-map;
+		};
+
+		/* cont_splash_region / framebuffer */
+		cont_splash: splash_region9d400000 {
+			reg = <0x0 0x9d400000 0x0 0x2400000>;
+			no-map;
+		};
+
+		zap_shader_region: gpu@fa800000 {
+                        compatible = "shared-dma-pool";
+                        reg = <0x0 0xfa800000 0x0 0x2000>;
+                        no-map;
+                };
+
+		ramoops@a0000000 {
+			compatible = "ramoops";
+			reg = <0x0 0xa0000000 0x0 0x400000>;
+			console-size = <0x20000>;
+			record-size = <0x20000>;
+			ftrace-size = <0x0>;
+			pmsg-size = <0x20000>;
+		};
+	};
+	
+	/*
+	 * Until we hook up type-c detection, we
+	 * have to stick with this. But it works.
+	 */
+	extcon_usb: extcon-usb {
+		compatible = "linux,extcon-usb-gpio";
+		id-gpio = <&tlmm 58 GPIO_ACTIVE_HIGH>;
+	};
+
+	vph_pwr: vph-pwr-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "vph_pwr";
+		regulator-always-on;
+		regulator-boot-on;
+	};
+};
+
+
+&blsp1_uart2 {
+	status = "okay";
+	pinctrl-names = "default";
+	//pinctrl-0 = <&uart_console_active>;
+};
+
+
+&blsp2_uart1 {
+	status = "okay";
+	/* HCI Bluetooth */
+	bluetooth {
+		compatible = "qcom,wcn3990-bt"; // common for all QCOM
+		vddxo-supply = <&vreg_l9a_1p8>; // downstream: vdd-core-supply
+		vddrf-supply = <&vreg_l6a_1p3>; // vdd-pa-supply
+		vddch0-supply = <&vreg_l19a_3p3>; // vdd-ldo-supply
+		max-speed = <3200000>;
+	};
+};
+
+&pm660l_gpios {
+	vol_up_pin_active: vol_up_pin {
+		pins = "gpio44";
+		function = "normal";
+		input-enable;
+		bias-pull-up;
+		qcom,drive-strength = <PMIC_GPIO_STRENGTH_NO>;
+	};
+};
+
+&pon {
+	resin {
+		compatible = "qcom,pm8941-resin";
+		interrupts = <0x0 0x8 1 IRQ_TYPE_EDGE_BOTH>;
+		debounce = <15625>;
+		bias-pull-up;
+		linux,code = <KEY_VOLUMEDOWN>;
+	};
+};
+
+&rpm_requests {
+	pm660-regulators {
+		compatible = "qcom,rpm-pm660-regulators";
+
+		vdd_s4-supply = <&vph_pwr>;
+		vdd_s5-supply = <&vph_pwr>;
+		vdd_s6-supply = <&vph_pwr>;
+		vdd_l1_l6_l7-supply = <&vreg_s5a_1p35>;
+		vdd_l2_l3-supply = <&vreg_s2b_1p05>;
+		vdd_l5-supply =  <&vreg_s2b_1p05>;
+		vdd_l8_l9_l10_l11_l12_l13_l14-supply = <&vreg_s4a_2p04>;
+		vdd_l15_l16_l17_l18_l19-supply = <&vreg_bob>;
+
+		vreg_s4a_2p04: s4 {
+			regulator-min-microvolt = <1805000>;
+			regulator-max-microvolt = <2040000>;
+		};
+		vreg_s5a_1p35: s5 {
+			regulator-min-microvolt = <1224000>;
+			regulator-max-microvolt = <1350000>;
+		};
+		pm660_s6: s6 {
+			regulator-min-microvolt = <504000>;
+			regulator-max-microvolt = <992000>;
+		};
+		/*pm660_l1: l1 {
+			regulator-min-microvolt = <1150000>;
+			regulator-max-microvolt = <1250000>;
+		};*/
+		vreg_l1a_1p225: l1 {
+			regulator-min-microvolt = <1226000>;
+			regulator-max-microvolt = <1250000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
+			regulator-allow-set-load;
+			/* regulator-always-on; */
+		};
+		pm660_l2: l2 {
+			regulator-min-microvolt = <950000>;
+			regulator-max-microvolt = <1010000>;
+		};
+		pm660_l3: l3 {
+			regulator-min-microvolt = <950000>;
+			regulator-max-microvolt = <1010000>;
+			regulator-always-on;
+		};
+		pm660_l5: l5 {
+			regulator-min-microvolt = <525000>;
+			regulator-max-microvolt = <950000>;
+		};
+		vreg_l6a_1p3: l6 {
+			regulator-min-microvolt = <1304000>;
+			regulator-max-microvolt = <1368000>;
+			regulator-allow-set-load;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
+		};
+		
+		pm660_l7: l7 {
+			regulator-min-microvolt = <1200000>;
+			regulator-max-microvolt = <1200000>;
+		};
+		
+		vreg_l8a_1p8: l8 {
+			regulator-min-microvolt = <1800000>;
+			regulator-max-microvolt = <1800000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
+			regulator-system-load = <325000>;
+			regulator-allow-set-load;
+		};
+		
+		vreg_l9a_1p8: l9 {
+			regulator-min-microvolt = <1804000>;
+			regulator-max-microvolt = <1896000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
+			regulator-allow-set-load;
+		};
+		
+		pm660_l10: l10 {
+			regulator-min-microvolt = <1780000>;
+			regulator-max-microvolt = <1950000>;
+		};
+		pm660_l11: l11 {
+			regulator-min-microvolt = <1780000>;
+			regulator-max-microvolt = <1950000>;
+			regulator-always-on;
+		};
+		pm660_l12: l12 {
+			regulator-min-microvolt = <1780000>;
+			regulator-max-microvolt = <1950000>;
+		};
+		pm660_l13: l13 {
+			regulator-min-microvolt = <1780000>;
+			regulator-max-microvolt = <1950000>;
+		};
+		pm660_l14: l14 {
+			regulator-min-microvolt = <1710000>;
+			regulator-max-microvolt = <1900000>;
+		};
+		pm660_l15: l15 {
+			regulator-min-microvolt = <1650000>;
+			regulator-max-microvolt = <2950000>;
+		};
+		pm660_l17: l17 {
+			regulator-min-microvolt = <1650000>;
+			regulator-max-microvolt = <2950000>;
+		};
+		vreg_l19a_3p3: l19 {
+			regulator-min-microvolt = <3312000>;
+			regulator-max-microvolt = <3400000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
+			regulator-allow-set-load;
+		};
+	};
+
+	pm660l-regulators {
+		compatible = "qcom,rpm-pm660l-regulators";
+
+		vdd_s1-supply = <&vph_pwr>;
+		vdd_s2-supply = <&vph_pwr>;
+		vdd_l1_l9_l10-supply = <&vreg_s2b_1p05>;
+		vdd_l2-supply = <&vreg_bob>;
+		vdd_l3_l5_l7_l8-supply = <&vreg_bob>;
+		vdd_l4_l6-supply = <&vreg_bob>;
+		/* downstream has this in dmesg: pm660l_l7: supplied by pm660_l10, WTF */
+		vdd_bob-supply = <&vph_pwr>;
+
+		vreg_s1b_1p125: s1 {
+			regulator-min-microvolt = <1125000>;
+			regulator-max-microvolt = <1125000>;
+		};
+		vreg_s2b_1p05: s2 {
+			regulator-min-microvolt = <1050000>;
+			regulator-max-microvolt = <1050000>;
+		};
+		/*pm660l_l1: l1 {
+			regulator-min-microvolt = <800000>;
+			regulator-max-microvolt = <925000>;
+		};*/
+		
+		vreg_l1b_0p925: l1 {
+			regulator-min-microvolt = <920000>;
+			regulator-max-microvolt = <928000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
+			regulator-allow-set-load;
+		};
+		
+		vreg_l2b_2p95: l2 {
+			/*
+			 * This regulator supports 1.648 - 3.104V on this board
+			 * but we set a max voltage of anything less than 2.7V
+			 * to satisfy a condition in sdhci.c that will disable
+			 * 3.3V SDHCI signaling, which happens to be not really
+			 * supported on the Xperia Nile/Ganges platform.
+			 */
+			regulator-min-microvolt = <1648000>;
+			regulator-max-microvolt = <2696000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
+			regulator-allow-set-load;
+		};
+		
+		pm660l_l3: l3 {
+			regulator-min-microvolt = <1710000>;
+			regulator-max-microvolt = <3600000>;
+		};
+		
+		vreg_l4b_29p5: l4 {
+			regulator-min-microvolt = <2944000>;
+			regulator-max-microvolt = <2952000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
+
+			regulator-min-microamp = <200>;
+			regulator-max-microamp = <600000>;
+			regulator-system-load = <570000>;
+			regulator-allow-set-load;
+		};
+		
+		vreg_l5b_29p5: l5 {
+			regulator-min-microvolt = <1800000>;
+			regulator-max-microvolt = <3328000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
+			regulator-allow-set-load;
+			regulator-system-load = <800000>;
+		};
+		
+		pm660l_l6: l6 {
+			regulator-min-microvolt = <1700000>;
+			regulator-max-microvolt = <3300000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
+			regulator-allow-set-load;
+		};
+		pm660l_l7: l7 {
+			regulator-min-microvolt = <2700000>;
+			regulator-max-microvolt = <3125000>;
+		};
+		pm660l_l8: l8 {
+			regulator-min-microvolt = <2800000>;
+			regulator-max-microvolt = <2800000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-ramp-delay = <0>;
+		};
+		vreg_bob: bob {
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3600000>;
+		};
+	};
+};
+
+&sdhc_1 {
+	status = "okay";
+	bus-width = <8>;
+	non-removable;
+	mmc-ddr-1_8v;    
+	mmc-hs200-1_8v;  
+	mmc-hs400-1_8v; 
+	vmmc-supply = <&vreg_l4b_29p5>; 
+	vqmmc-supply = <&vreg_l8a_1p8>;  
+};
+
+
+&sdhc_2 {
+	status = "disabled";
+
+	vmmc-supply = <&vreg_l5b_29p5>;
+	vqmmc-supply = <&vreg_l2b_2p95>;
+};
+
+&tlmm {
+	gpio-reserved-ranges = <8 4>;
+	/* ts_reset_gpio: touch_gpio {
+		gpio-hog;
+		gpios = <66 GPIO_ACTIVE_HIGH>;
+		output-high;
+	}; */
+	
+	panel_reset_gpio: panel-reset-gpio {
+		pins = "gpio53";
+		function = "gpio";
+		drive-strength = <8>;
+		bias-disable = <0>;
+	};
+	
+	mdss_dsi_suspend: mdss-dsi-suspend {
+		pins = "gpio53";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-down;
+	};
+
+	panel_te_gpio: panel-te-gpio {
+		pins = "gpio59";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-down;
+	};
+};
+
+&usb3 {
+	status = "okay";
+};
+
+&usb3_dwc3 {
+	status = "okay";
+	dr_mode = "peripheral";
+	extcon = <&extcon_usb>;
+};
+
+&qusb2phy {
+	status = "okay";
+};
+
+&blsp_i2c4 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+        status = "okay";
+
+      touchscreen@62 {
+	compatible = "novatek,nt36525";
+        reg = <0x62>;
+        interrupt-parent = <&tlmm>;
+        interrupts = <67 IRQ_TYPE_EDGE_RISING>;
+        reset-gpios = <&tlmm 66 GPIO_ACTIVE_HIGH>;
+
+        vdd-supply = <&pm660l_l3>;
+        //vio-supply = <&pm660_l11>;
+
+	};
+	/*rmi4-i2c-dev@70 {
+		reg = <0x70>;
+		compatible = "syna,rmi4-i2c";
+		interrupts-extended = <&tlmm 67 0x2008>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		vdd-supply = <&pm660l_l3>;
+		vio-supply = <&pm660_l11>;
+	
+		syna,reset-delay-ms = <200>;
+		syna,startup-delay-ms = <200>;
+		rmi4-f01@1 {
+			reg = <0x01>;
+			syna,nosleep-mode = <1>;
+		};
+
+		rmi4-f12@12 {
+			reg = <0x12>;
+			syna,sensor-type = <1>;
+			syna,clip-x-low = <0>;
+			syna,clip-x-high = <1080>;
+			syna,clip-y-low = <0>;
+			syna,clip-y-high = <2160>;
+		};
+	};*/
+};
+
+&dsi0 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	vdda-supply = <&vreg_l1a_1p225>;
+	status = "okay";
+	panel@0 {
+		compatible = "asus,nt36672-txd";
+		reg = <0>;
+
+		backlight = <&pm660l_wled>;
+		//vddio-supply = <&pm660_l11>;
+		//vdda-supply = <&pm660l_l6>;
+		//ibb-supply = <&ibb>;
+		//lab-supply = <&lab>;
+		//reset-gpios = <&tlmm XY GPIO_ACTIVE_LOW>;
+		reset-gpios = <&tlmm 53 GPIO_ACTIVE_HIGH>;
+		disp-te-gpios = <&tlmm 59 GPIO_ACTIVE_HIGH>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&panel_reset_gpio &panel_te_gpio>;
+		port {
+			panel_in: endpoint {
+				remote-endpoint = <&dsi0_out>;
+			};
+		};
+	};
+};
+
+&dsi0_out {
+	data-lanes = <0 1 2 3>;
+	remote-endpoint = <&panel_in>;
+};
+
+&mdss {
+	status = "okay";
+};
+
+&dsi0_phy {
+	vcca-supply = <&vreg_l1b_0p925>;
+	status = "okay";
+};
+
+&dsi1_phy{
+	status = "disabled";
+};
+
+&dsi1{
+	status = "disabled";
+};
+
+&pm660l_wled {
+        status = "okay";
+        default-brightness = <512>;
+};
+
+&gcc {
+	status = "okay";
+};
+
+&gpucc {
+	status = "okay";
+};
+
+&mmcc {
+	status = "okay";
+};
+
+&mmss_smmu {
+        status = "okay";
+};
+
+
+&adreno_gpu {
+	firmware-name = "qcom/a512_zap.mdt";
+	status = "okay";
+};
+
+&adsp_pil {
+	/* firmware from device */
+	status = "okay";
+	firmware-name = "adsp.mdt";
+};
