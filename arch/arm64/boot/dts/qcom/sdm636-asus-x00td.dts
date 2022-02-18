@@ -6,12 +6,15 @@
 /dts-v1/;
 
 #include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/input/gpio-keys.h>
 #include <dt-bindings/input/linux-event-codes.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/pinctrl/qcom,pmic-gpio.h>
 #include "sdm636.dtsi"
 #include "pm660.dtsi"
 #include "pm660l.dtsi"
+#include "pmi8998.dtsi"
 
 /delete-node/ &qhee_code;
 /delete-node/ &smem_region;
@@ -21,6 +24,7 @@
 /delete-node/ &adsp_region;
 /delete-node/ &buffer_mem;
 /delete-node/ &zap_shader_region;
+
 
 / {
 	model = "Asus Zenfone Max Pro M1";
@@ -42,7 +46,7 @@
 
 		stdout-path = "framebuffer0";
 
-		framebuffer0: framebuffer@0x9d400000 {
+		framebuffer0: framebuffer@9d400000 {
 		compatible = "simple-framebuffer";
 		reg = <0x0 0x9d400000 0x0 (1080 * 2160 * 4)>;
 		status = "disabled";
@@ -64,7 +68,7 @@
 
 		vol-up {
 			label = "Volume up";
-			gpios = <&pm660l_gpios 44 GPIO_ACTIVE_LOW>;
+			gpios = <&pm660l_gpios 7 GPIO_ACTIVE_LOW>;
 			linux,input-type = <EV_KEY>;
 			linux,code = <KEY_VOLUMEUP>;
 			debounce-interval = <15>;
@@ -112,7 +116,7 @@
 		/* which covers region starting from removed_regions to 0x88F00000 (end of our tz_mem) */
 
 		/* modem_fw_region */
-		mpss_region: modem_fw_region@8ac00000 {
+		modem_fw_mem: modem_fw_region@8ac00000 {
 			reg = <0x0 0x8ac00000 0x0 0x7e00000>;
 			no-map;
 		};
@@ -124,7 +128,7 @@
 		};
 
 		/* pil_mba_mem */
-		mba_region: mba@94800000 {
+		pil_mba_mem: mba@94800000 {
 			reg = <0x0 0x94800000 0x0 0x200000>;
 			no-map;
 		};
@@ -136,7 +140,7 @@
 		};
 
 		/* cont_splash_region / framebuffer */
-		cont_splash: splash_region9d400000 {
+		cont_splash: splash_region@9d400000 {
 			reg = <0x0 0x9d400000 0x0 0x2400000>;
 			no-map;
 		};
@@ -145,7 +149,7 @@
                         compatible = "shared-dma-pool";
                         reg = <0x0 0xfa800000 0x0 0x2000>;
                         no-map;
-                };
+		};
 
 		ramoops@a0000000 {
 			compatible = "ramoops";
@@ -169,8 +173,128 @@
 	vph_pwr: vph-pwr-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "vph_pwr";
+		regulator-min-microvolt = <3700000>;
+		regulator-max-microvolt = <3700000>;
+
 		regulator-always-on;
 		regulator-boot-on;
+	};
+
+	gpio-keys {
+		compatible = "gpio-keys";
+		input-name = "gpio-keys";
+
+		volup {
+			label = "Volume Up";
+			gpios = <&pm660l_gpios 7 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_VOLUMEUP>;
+			debounce-interval = <15>;
+		};
+	};
+
+	/* Add support of modem and Wi-Fi */
+	soc {
+		/*
+		 * We don't know origin of remoteproc
+		 * description now, it was provided on Github
+		 * by konradybcio/58ninges_labs
+		 */
+		remoteproc_mss: remoteproc@4080000 {
+			compatible = "qcom,msm8998-mss-pil";
+			reg = <0x04080000 0x100>, <0x04180000 0x40>;
+			reg-names = "qdsp6", "rmb";
+			status = "okay";
+
+			interrupts-extended =
+				<&intc GIC_SPI 448 IRQ_TYPE_EDGE_RISING>,
+				<&modem_smp2p_in 0 IRQ_TYPE_EDGE_RISING>,
+				<&modem_smp2p_in 1 IRQ_TYPE_EDGE_RISING>,
+				<&modem_smp2p_in 2 IRQ_TYPE_EDGE_RISING>,
+				<&modem_smp2p_in 3 IRQ_TYPE_EDGE_RISING>,
+				<&modem_smp2p_in 7 IRQ_TYPE_EDGE_RISING>;
+			interrupt-names = "wdog", "fatal", "ready",
+					  "handover", "stop-ack",
+					  "shutdown-ack";
+
+			clocks = <&gcc GCC_MSS_CFG_AHB_CLK>,
+				 <&gcc GCC_BIMC_MSS_Q6_AXI_CLK>,
+				 <&gcc GCC_BOOT_ROM_AHB_CLK>,
+				 <&gcc GPLL0_OUT_MSSCC>,
+				 <&gcc GCC_MSS_SNOC_AXI_CLK>,
+				 <&gcc GCC_MSS_MNOC_BIMC_AXI_CLK>,
+				 <&rpmcc RPM_SMD_QDSS_CLK>,
+				 <&rpmcc RPM_SMD_XO_CLK_SRC>;
+			clock-names = "iface", "bus", "mem", "gpll0_mss",
+				      "snoc_axi", "mnoc_axi", "qdss", "xo";
+
+			qcom,smem-states = <&modem_smp2p_out 0>;
+			qcom,smem-state-names = "stop";
+
+			resets = <&gcc GCC_MSS_RESTART>;
+			reset-names = "mss_restart";
+
+			qcom,halt-regs = <&tcsr_mutex_regs 0x23000 0x25000 0x24000>;
+
+			power-domains = <&rpmpd SDM660_VDDCX>,
+					<&rpmpd SDM660_VDDMX>;
+			power-domain-names = "cx", "mx";
+
+			/* firmware from device */
+			firmware-name = "mba.mbn", "modem.mdt";
+
+			/* modem regions */
+			mba {
+				memory-region = <&pil_mba_mem>;
+			};
+
+			mpss {
+				memory-region = <&modem_fw_mem>;
+			};
+
+			glink-edge {
+				interrupts = <GIC_SPI 452 IRQ_TYPE_EDGE_RISING>;
+				label = "modem";
+				qcom,remote-pid = <1>;
+				mboxes = <&apcs_glb 15>;
+			};
+		};
+
+		wifi: wifi@18800000 {
+			/*
+			 * Generated from ICNSS - they have same
+			 * membase, clocks, iommus and interrupts
+			 * However, SMMU not working now :(
+			 */
+			compatible = "qcom,wcn3990-wifi"; /* common for all QCOMs */
+			reg = <0x18800000 0x800000>;
+			reg-names = "membase";
+			memory-region = <&wlan_msa_mem>;
+			clocks = <&rpmcc RPM_SMD_RF_CLK1_PIN>;
+			clock-names = "cxo_ref_clk_pin";
+			interrupts =
+				<GIC_SPI 413 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 414 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 415 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 416 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 417 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 418 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 420 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 421 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 422 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 423 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 424 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 425 IRQ_TYPE_LEVEL_HIGH>;
+
+			iommus = <&anoc2_smmu 0x1a00>,
+				 <&anoc2_smmu 0x1a01>;
+			qcom,snoc-host-cap-8bit-quirk; /* unknown property */
+			status = "okay";
+
+			/* supplies are same with downstream */
+			vdd-1.8-xo-supply = <&vreg_l9a_1p8>;
+			vdd-1.3-rfa-supply = <&vreg_l6a_1p3>;
+			vdd-3.3-ch0-supply = <&vreg_l19a_3p3>;
+		};
 	};
 };
 
@@ -187,6 +311,7 @@
 	/* HCI Bluetooth */
 	bluetooth {
 		compatible = "qcom,wcn3990-bt"; // common for all QCOM
+		firmware-name = "qca/crnv21.bin";
 		vddxo-supply = <&vreg_l9a_1p8>; // downstream: vdd-core-supply
 		vddrf-supply = <&vreg_l6a_1p3>; // vdd-pa-supply
 		vddch0-supply = <&vreg_l19a_3p3>; // vdd-ldo-supply
@@ -196,7 +321,7 @@
 
 &pm660l_gpios {
 	vol_up_pin_active: vol_up_pin {
-		pins = "gpio44";
+		pins = "gpio7";
 		function = "normal";
 		input-enable;
 		bias-pull-up;
@@ -298,11 +423,12 @@
 			regulator-min-microvolt = <1780000>;
 			regulator-max-microvolt = <1950000>;
 		};
-		pm660_l11: l11 {
+		vreg_l11a_1p95: l11 {
 			regulator-min-microvolt = <1780000>;
 			regulator-max-microvolt = <1950000>;
 			regulator-always-on;
 		};
+
 		pm660_l12: l12 {
 			regulator-min-microvolt = <1780000>;
 			regulator-max-microvolt = <1950000>;
@@ -405,13 +531,13 @@
 			regulator-allow-set-load;
 			regulator-system-load = <800000>;
 		};
-		
-		pm660l_l6: l6 {
-			regulator-min-microvolt = <1700000>;
-			regulator-max-microvolt = <3300000>;
+
+		vreg_l6b_3p3: l6 {
+			regulator-min-microvolt = <1704000>;
+			regulator-max-microvolt = <3312000>;
+			//regulator-always-on;
 			regulator-enable-ramp-delay = <250>;
 			regulator-ramp-delay = <0>;
-			regulator-allow-set-load;
 		};
 		pm660l_l7: l7 {
 			regulator-min-microvolt = <2700000>;
@@ -540,18 +666,18 @@
 &dsi0 {
 	#address-cells = <1>;
 	#size-cells = <0>;
+	vdd-supply = <&vreg_l1b_0p925>;
 	vdda-supply = <&vreg_l1a_1p225>;
 	status = "okay";
 	panel@0 {
 		compatible = "asus,nt36672-txd";
 		reg = <0>;
 
-		backlight = <&pm660l_wled>;
-		//vddio-supply = <&pm660_l11>;
-		//vdda-supply = <&pm660l_l6>;
+		backlight = <&pm660l_wled>; 
+		//vdd-supply = <&vreg_l6b_3p3>; // vdda-3p3-supply
+		//vddio-supply = <&vreg_l11a_1p95>; //wqhd-vddio-supply
 		//ibb-supply = <&ibb>;
 		//lab-supply = <&lab>;
-		//reset-gpios = <&tlmm XY GPIO_ACTIVE_LOW>;
 		reset-gpios = <&tlmm 53 GPIO_ACTIVE_HIGH>;
 		disp-te-gpios = <&tlmm 59 GPIO_ACTIVE_HIGH>;
 
@@ -568,6 +694,36 @@
 &dsi0_out {
 	data-lanes = <0 1 2 3>;
 	remote-endpoint = <&panel_in>;
+};
+
+&ibb {
+	regulator-min-microvolt = <4000000>;
+	regulator-max-microvolt = <6000000>;
+	regulator-min-microamp = <800000>;
+	regulator-max-microamp = <800000>;
+	regulator-enable-ramp-delay = <200>;
+	regulator-over-current-protection;
+	regulator-pull-down;
+	regulator-ramp-delay = <1>;
+	regulator-settling-time-up-us = <600>;
+	regulator-settling-time-down-us = <1000>;
+	regulator-soft-start;
+	qcom,discharge-resistor-kohms = <300>;
+};
+
+&lab {
+	regulator-min-microvolt = <4000000>;
+	regulator-max-microvolt = <6000000>;
+	qcom,soft-start-us = <800>;
+	regulator-min-microamp = <200000>;
+	regulator-max-microamp = <200000>;
+	regulator-enable-ramp-delay = <500>;
+	regulator-over-current-protection;
+	regulator-pull-down;
+	regulator-ramp-delay = <1>;
+	regulator-settling-time-up-us = <50000>;
+	regulator-settling-time-down-us = <3000>;
+	regulator-soft-start;
 };
 
 &mdss {
@@ -589,7 +745,7 @@
 
 &pm660l_wled {
         status = "okay";
-        default-brightness = <512>;
+        default-brightness = <2048>;
 };
 
 &gcc {
@@ -608,10 +764,12 @@
         status = "okay";
 };
 
-
 &adreno_gpu {
-	firmware-name = "qcom/a512_zap.mdt";
-	status = "okay";
+	status = "disabled";
+	zap-shader {
+		memory-region = <&zap_shader_region>;
+		firmware-name = "qcom/a512_zap.mdt";
+	};
 };
 
 &adsp_pil {
