@@ -34,6 +34,12 @@ config SND_SOC_LPASS_APQ8016
 	select SND_SOC_LPASS_CPU
 	select SND_SOC_LPASS_PLATFORM
 
+config SND_SOC_LPASS_MSM8998
+	tristate
+	select SND_SOC_LPASS_CPU
+	select SND_SOC_LPASS_PLATFORM
+	select SND_SOC_LPASS_HDMI
+
 config SND_SOC_LPASS_SC7180
 	tristate
 	select SND_SOC_LPASS_CPU
@@ -147,6 +153,18 @@ config SND_SOC_MSM8996
 	  Support for Qualcomm Technologies LPASS audio block in
 	  APQ8096 SoC-based systems.
 	  Say Y if you want to use audio device on this SoCs
+
+config SND_SOC_MSM8998
+	tristate "SoC Machine driver for MSM8998 and APQ8098 boards"
+	depends on QCOM_APR && I2C && SOUNDWIRE
+	depends on COMMON_CLK
+	select SND_SOC_QDSP6
+	select SND_SOC_QCOM_COMMON
+	select SND_SOC_LPASS_MSM8998
+	help
+	  To add support for audio on Qualcomm Technologies Inc.
+	  MSM8998 SoC-based systems.
+	  Say Y if you want to use audio device on this SoCs.
 
 config SND_SOC_SDM845
 	tristate "SoC Machine driver for SDM845 boards"

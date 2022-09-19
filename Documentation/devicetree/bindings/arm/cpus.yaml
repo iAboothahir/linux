@@ -138,6 +138,7 @@ properties:
       - arm,cortex-a76
       - arm,cortex-a77
       - arm,cortex-a78
+      - arm,cortex-a78ae
       - arm,cortex-a510
       - arm,cortex-a710
       - arm,cortex-m0
@@ -316,6 +317,12 @@ properties:
       "qcom,msm8916-smp".
 
       * arm/msm/qcom,kpss-acc.txt
+
+  qcom,freq-domain:
+    $ref: '/schemas/types.yaml#/definitions/phandle-array'
+    description: |
+      CPUs supporting freq-domain must set their "qcom,freq-domain" property
+      with phandle to a cpufreq_hw node followed by the Domain ID(0/1).
 
   rockchip,pmu:
     $ref: '/schemas/types.yaml#/definitions/phandle'

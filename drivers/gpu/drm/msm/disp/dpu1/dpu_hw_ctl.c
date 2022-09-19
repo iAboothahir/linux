@@ -58,10 +58,7 @@ static const struct dpu_ctl_cfg *_ctl_offset(enum dpu_ctl ctl,
 
 	for (i = 0; i < m->ctl_count; i++) {
 		if (ctl == m->ctl[i].id) {
-			b->base_off = addr;
-			b->blk_off = m->ctl[i].base;
-			b->length = m->ctl[i].len;
-			b->hwversion = m->hwversion;
+			b->blk_addr = addr + m->ctl[i].base;
 			b->log_mask = DPU_DBG_MASK_CTL;
 			return &m->ctl[i];
 		}
@@ -101,7 +98,7 @@ static inline void dpu_hw_ctl_trigger_start(struct dpu_hw_ctl *ctx)
 
 static inline bool dpu_hw_ctl_is_started(struct dpu_hw_ctl *ctx)
 {
-	return !!(DPU_REG_READ(&ctx->hw, CTL_START) & BIT(0));
+	return true;
 }
 
 static inline void dpu_hw_ctl_trigger_pending(struct dpu_hw_ctl *ctx)

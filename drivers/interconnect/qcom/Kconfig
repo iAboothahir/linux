@@ -44,6 +44,15 @@ config INTERCONNECT_QCOM_MSM8996
 	  This is a driver for the Qualcomm Network-on-Chip on msm8996-based
 	  platforms.
 
+config INTERCONNECT_QCOM_MSM8998
+	tristate "Qualcomm MSM8998 interconnect driver"
+	depends on INTERCONNECT_QCOM
+	depends on QCOM_SMD_RPM
+	select INTERCONNECT_QCOM_SMD_RPM
+	help
+	  This is a driver for the Qualcomm Network-on-Chip on msm8998-based
+	  platforms.
+
 config INTERCONNECT_QCOM_OSM_L3
 	tristate "Qualcomm OSM L3 interconnect driver"
 	depends on INTERCONNECT_QCOM || COMPILE_TEST
@@ -153,6 +162,15 @@ config INTERCONNECT_QCOM_SDX65
 	select INTERCONNECT_QCOM_BCM_VOTER
 	help
 	  This is a driver for the Qualcomm Network-on-Chip on sdx65-based
+	  platforms.
+
+config INTERCONNECT_QCOM_SM6350
+	tristate "Qualcomm SM6350 interconnect driver"
+	depends on INTERCONNECT_QCOM_RPMH_POSSIBLE
+	select INTERCONNECT_QCOM_RPMH
+	select INTERCONNECT_QCOM_BCM_VOTER
+	help
+	  This is a driver for the Qualcomm Network-on-Chip on sm6350-based
 	  platforms.
 
 config INTERCONNECT_QCOM_SM8150

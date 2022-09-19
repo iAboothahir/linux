@@ -39,6 +39,8 @@
 #define QUP_MX_READ_CNT		0x208
 #define QUP_IN_FIFO_BASE	0x218
 #define QUP_I2C_CLK_CTL		0x400
+#define  QUP_I2C_CLK_CTL_SDA_NR	GENMASK(27, 26)
+#define  QUP_I2C_CLK_CTL_SCL_NR	GENMASK(25, 24)
 #define QUP_I2C_STATUS		0x404
 #define QUP_I2C_MASTER_GEN	0x408
 
@@ -1663,6 +1665,7 @@ static int qup_i2c_probe(struct platform_device *pdev)
 	int ret, fs_div, hs_div;
 	u32 src_clk_freq = DEFAULT_SRC_CLK;
 	u32 clk_freq = DEFAULT_CLK_FREQ;
+	u32 noise_reject_scl = 0, noise_reject_sda = 0;
 	int blocks;
 	bool is_qup_v1;
 
@@ -1860,6 +1863,19 @@ nodma:
 		qup->clk_ctl = ((fs_div / 2) << 16) | (hs_div << 8) | (fs_div & 0xff);
 	}
 
+	/* SCL/SDA Noise rejection (optional) */
+	ret = device_property_read_u32(qup->dev, "qcom,noise-reject-scl",
+				      &noise_reject_scl);
+	if (ret == 0)
+		qup->clk_ctl |= FIELD_PREP(QUP_I2C_CLK_CTL_SCL_NR,
+					   noise_reject_scl);
+
+	ret = device_property_read_u32(qup->dev, "qcom,noise-reject-sda",
+				      &noise_reject_sda);
+	if (ret == 0)
+		qup->clk_ctl |= FIELD_PREP(QUP_I2C_CLK_CTL_SDA_NR,
+					   noise_reject_sda);
+
 	/*
 	 * Time it takes for a byte to be clocked out on the bus.
 	 * Each byte takes 9 clock cycles (8 bits + 1 ack).
@@ -1878,7 +1894,7 @@ nodma:
 	qup->adap.dev.of_node = pdev->dev.of_node;
 	qup->is_last = true;
 
-	strlcpy(qup->adap.name, "QUP I2C adapter", sizeof(qup->adap.name));
+	strscpy(qup->adap.name, "QUP I2C adapter", sizeof(qup->adap.name));
 
 	pm_runtime_set_autosuspend_delay(qup->dev, MSEC_PER_SEC);
 	pm_runtime_use_autosuspend(qup->dev);

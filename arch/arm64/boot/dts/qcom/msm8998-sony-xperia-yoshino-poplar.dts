@@ -25,6 +25,11 @@
 	qcom,soft-start-us = <800>;
 };
 
+&wcd9335 {
+	pinctrl-0 = <&cdc_reset_n &wcd_int_n>;
+	pinctrl-names = "default";
+};
+
 &vreg_l18a_2p85 {
 	/* Note: Round-down from 2850000 to be a multiple of PLDO step-size 8000 */
 	regulator-min-microvolt = <2848000>;

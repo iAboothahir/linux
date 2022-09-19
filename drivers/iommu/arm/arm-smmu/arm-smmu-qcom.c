@@ -6,22 +6,38 @@
 #include <linux/acpi.h>
 #include <linux/adreno-smmu-priv.h>
 #include <linux/bitmap.h>
+#include <linux/delay.h>
 #include <linux/of_device.h>
 #include <linux/qcom_scm.h>
 
 #include "arm-smmu.h"
+#include "arm-smmu-qcom.h"
 
-struct qcom_smmu {
-	struct arm_smmu_device smmu;
-	DECLARE_BITMAP(reset_cb_nodisable_mask, ARM_SMMU_MAX_CBS);
-	bool bypass_quirk;
-	u8 bypass_cbndx;
-	u32 stall_enabled;
-};
+#define QCOM_DUMMY_VAL	-1
 
 static struct qcom_smmu *to_qcom_smmu(struct arm_smmu_device *smmu)
 {
 	return container_of(smmu, struct qcom_smmu, smmu);
+}
+
+static void qcom_smmu_tlb_sync(struct arm_smmu_device *smmu, int page,
+				int sync, int status)
+{
+	unsigned int spin_cnt, delay;
+	u32 reg;
+
+	arm_smmu_writel(smmu, page, sync, QCOM_DUMMY_VAL);
+	for (delay = 1; delay < TLB_LOOP_TIMEOUT; delay *= 2) {
+		for (spin_cnt = TLB_SPIN_COUNT; spin_cnt > 0; spin_cnt--) {
+			reg = arm_smmu_readl(smmu, page, status);
+			if (!(reg & ARM_SMMU_sTLBGSTATUS_GSACTIVE))
+				return;
+			cpu_relax();
+		}
+		udelay(delay);
+	}
+
+	qcom_smmu_tlb_sync_debug(smmu);
 }
 
 static void qcom_adreno_smmu_write_sctlr(struct arm_smmu_device *smmu, int idx,
@@ -182,11 +198,13 @@ static int qcom_adreno_smmu_alloc_context_bank(struct arm_smmu_domain *smmu_doma
 
 static bool qcom_adreno_can_do_ttbr1(struct arm_smmu_device *smmu)
 {
+/*
 	const struct device_node *np = smmu->dev->of_node;
-
-	if (of_device_is_compatible(np, "qcom,msm8996-smmu-v2"))
+	if (of_device_is_compatible(np, "qcom,msm8996-smmu-v2") ||
+	    of_device_is_compatible(np, "qcom,msm8998-smmu-v2") ||
+	    of_device_is_compatible(np, "qcom,sdm630-smmu-v2"))
 		return false;
-
+*/
 	return true;
 }
 
@@ -230,11 +248,14 @@ static const struct of_device_id qcom_smmu_client_of_match[] __maybe_unused = {
 	{ .compatible = "qcom,adreno" },
 	{ .compatible = "qcom,mdp4" },
 	{ .compatible = "qcom,mdss" },
+	{ .compatible = "qcom,msm8998-mss-pil" },
 	{ .compatible = "qcom,sc7180-mdss" },
 	{ .compatible = "qcom,sc7180-mss-pil" },
 	{ .compatible = "qcom,sc7280-mdss" },
 	{ .compatible = "qcom,sc7280-mss-pil" },
 	{ .compatible = "qcom,sc8180x-mdss" },
+	{ .compatible = "qcom,sm8250-mdss" },
+	{ .compatible = "qcom,sdm660-mss-pil" },
 	{ .compatible = "qcom,sdm845-mdss" },
 	{ .compatible = "qcom,sdm845-mss-pil" },
 	{ }
@@ -393,6 +414,7 @@ static const struct arm_smmu_impl qcom_smmu_impl = {
 	.reset = qcom_smmu500_reset,
 	.reset_cb_nodisable = qcom_smmu500_reset_cb_nodisable,
 	.write_s2cr = qcom_smmu_write_s2cr,
+	.tlb_sync = qcom_smmu_tlb_sync,
 };
 
 static const struct arm_smmu_impl qcom_adreno_smmu_impl = {
@@ -402,6 +424,7 @@ static const struct arm_smmu_impl qcom_adreno_smmu_impl = {
 	.reset_cb_nodisable = qcom_smmu500_reset_cb_nodisable,
 	.alloc_context_bank = qcom_adreno_smmu_alloc_context_bank,
 	.write_sctlr = qcom_adreno_smmu_write_sctlr,
+	.tlb_sync = qcom_smmu_tlb_sync,
 };
 
 static struct arm_smmu_device *qcom_smmu_create(struct arm_smmu_device *smmu,
@@ -421,6 +444,7 @@ static struct arm_smmu_device *qcom_smmu_create(struct arm_smmu_device *smmu,
 		return ERR_PTR(-ENOMEM);
 
 	qsmmu->smmu.impl = impl;
+	qsmmu->cfg = qcom_smmu_impl_data(smmu);
 	qsmmu->bypass_cbndx = 0xff;
 	bitmap_zero(qsmmu->reset_cb_nodisable_mask, ARM_SMMU_MAX_CBS);
 
@@ -464,6 +488,7 @@ static const struct of_device_id __maybe_unused qcom_smmu_impl_of_match[] = {
 	{ .compatible = "qcom,sdm845-smmu-500" },
 	{ .compatible = "qcom,sm6125-smmu-500" },
 	{ .compatible = "qcom,sm6350-smmu-500" },
+	{ .compatible = "qcom,sm6375-smmu-500" },
 	{ .compatible = "qcom,sm8150-smmu-500" },
 	{ .compatible = "qcom,sm8250-smmu-500" },
 	{ .compatible = "qcom,sm8350-smmu-500" },

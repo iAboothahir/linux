@@ -2080,6 +2080,7 @@ static struct clk_branch gcc_bimc_gfx_clk = {
 		.enable_mask = BIT(0),
 		.hw.init = &(struct clk_init_data){
 			.name = "gcc_bimc_gfx_clk",
+			.flags = CLK_IS_CRITICAL,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -2220,6 +2221,7 @@ static struct clk_rcg2 hmss_gpll0_clk_src = {
 		.name = "hmss_gpll0_clk_src",
 		.parent_data = gcc_parent_data_1,
 		.num_parents = ARRAY_SIZE(gcc_parent_data_1),
+		.flags = CLK_IS_CRITICAL,
 		.ops = &clk_rcg2_ops,
 	},
 };
@@ -2885,6 +2887,43 @@ static struct clk_branch ssc_cnoc_ahbs_clk = {
 	},
 };
 
+static struct clk_branch hlos1_vote_lpass_core_smmu_clk = {
+	.halt_reg = 0x7D010,
+	.clkr = {
+		.enable_reg = 0x7D010,
+		.enable_mask = BIT(0),
+		.hw.init = &(struct clk_init_data) {
+			.name = "hlos1_vote_lpass_core_smmu_clk",
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
+static struct clk_branch hlos1_vote_lpass_adsp_smmu_clk = {
+	.halt_reg = 0x7D014,
+	.clkr = {
+		.enable_reg = 0x7D014,
+		.enable_mask = BIT(0),
+		.hw.init = &(struct clk_init_data) {
+			.name = "hlos1_vote_lpass_adsp_smmu_clk",
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
+static struct clk_branch gcc_mss_q6_bimc_axi_clk = {
+	.halt_reg = 0x8A040,
+	.clkr = {
+		.enable_reg = 0x8A040,
+		.enable_mask = BIT(0),
+		.hw.init = &(struct clk_init_data) {
+			.name = "gcc_mss_q6_bimc_axi_clk",
+			.flags = CLK_IS_CRITICAL,
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
 static struct gdsc pcie_0_gdsc = {
 	.gdscr = 0x6b004,
 	.gds_hw_ctrl = 0x0,
@@ -2913,6 +2952,26 @@ static struct gdsc usb_30_gdsc = {
 	},
 	.pwrsts = PWRSTS_OFF_ON,
 	.flags = VOTABLE,
+};
+
+static struct gdsc hlos1_vote_lpass_adsp = {
+	.gdscr = 0x7d034,
+	.gds_hw_ctrl = 0x0,
+	.pd = {
+		.name = "lpass_adsp_gdsc",
+	},
+	.pwrsts = PWRSTS_OFF_ON,
+	.flags = VOTABLE,
+};
+
+static struct gdsc hlos1_vote_lpass_core = {
+	.gdscr = 0x7d038,
+	.gds_hw_ctrl = 0x0,
+	.pd = {
+		.name = "lpass_core_gdsc",
+	},
+	.pwrsts = PWRSTS_OFF_ON,
+	.flags = ALWAYS_ON,
 };
 
 static struct clk_regmap *gcc_msm8998_clocks[] = {
@@ -3092,12 +3151,17 @@ static struct clk_regmap *gcc_msm8998_clocks[] = {
 	[AGGRE2_SNOC_NORTH_AXI] = &aggre2_snoc_north_axi_clk.clkr,
 	[SSC_XO] = &ssc_xo_clk.clkr,
 	[SSC_CNOC_AHBS_CLK] = &ssc_cnoc_ahbs_clk.clkr,
+	[GCC_MSS_Q6_BIMC_AXI_CLK] = &gcc_mss_q6_bimc_axi_clk.clkr,
+	[HLOS1_VOTE_LPASS_CORE_SMMU_CLK] = &hlos1_vote_lpass_core_smmu_clk.clkr,
+	[HLOS1_VOTE_LPASS_ADSP_SMMU_CLK] = &hlos1_vote_lpass_adsp_smmu_clk.clkr,
 };
 
 static struct gdsc *gcc_msm8998_gdscs[] = {
 	[PCIE_0_GDSC] = &pcie_0_gdsc,
 	[UFS_GDSC] = &ufs_gdsc,
 	[USB_30_GDSC] = &usb_30_gdsc,
+	[LPASS_ADSP_GDSC] = &hlos1_vote_lpass_adsp,
+	[LPASS_CORE_GDSC] = &hlos1_vote_lpass_core,
 };
 
 static const struct qcom_reset_map gcc_msm8998_resets[] = {
@@ -3246,6 +3310,14 @@ static int gcc_msm8998_probe(struct platform_device *pdev)
 	ret = regmap_update_bits(regmap, 0x52008, BIT(21), BIT(21));
 	if (ret)
 		return ret;
+
+	/*
+	 * GCC_MMSS_MISC - GCC_GPU_MISC:
+	 * 1. Disable the GPLL0 active input to MMSS and GPU
+	 * 2. Select clk division 1 (CLK/2)
+	 */
+	regmap_write(regmap, 0x0902C, 0x10003); /* MMSS*/
+	regmap_write(regmap, 0x71028, 0x10003); /* GPU */
 
 	return qcom_cc_really_probe(pdev, &gcc_msm8998_desc, regmap);
 }
