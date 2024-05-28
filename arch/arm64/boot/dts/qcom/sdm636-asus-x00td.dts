@@ -192,6 +192,9 @@
 	regulators-0 {
 		compatible = "qcom,rpm-pm660-regulators";
 
+		vdd_s1-supply = <&vph_pwr>;
+		vdd_s2-supply = <&vph_pwr>;
+		vdd_s3-supply = <&vph_pwr>;
 		vdd_s4-supply = <&vph_pwr>;
 		vdd_s5-supply = <&vph_pwr>;
 		vdd_s6-supply = <&vph_pwr>;
@@ -321,6 +324,13 @@
 			regulator-enable-ramp-delay = <250>;
 		};
 
+		vreg_l16a_2p7: l16 {
+			regulator-min-microvolt = <2800000>;
+			regulator-max-microvolt = <2800000>;
+			regulator-enable-ramp-delay = <250>;
+			regulator-always-on;
+		};
+
 		vreg_l17a_1p8: l17 {
 			regulator-min-microvolt = <1648000>;
 			regulator-max-microvolt = <2952000>;
@@ -349,6 +359,12 @@
 		vdd_l3_l5_l7_l8-supply = <&vreg_bob>;
 		vdd_l4_l6-supply = <&vreg_bob>;
 		vdd_bob-supply = <&vph_pwr>;
+
+		vreg_bob: bob {
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3600000>;
+			regulator-enable-ramp-delay = <500>;
+		};
 
 		vreg_s1b_1p125: s1 {
 			regulator-min-microvolt = <1125000>;
@@ -383,6 +399,7 @@
 			regulator-max-microvolt = <3300000>;
 			regulator-enable-ramp-delay = <250>;
 			regulator-allow-set-load;
+			regulator-always-on;
 		};
 
 		vreg_l4b_2p95: l4 {
@@ -421,12 +438,6 @@
 			regulator-min-microvolt = <3200000>;
 			regulator-max-microvolt = <3400000>;
 			regulator-enable-ramp-delay = <250>;
-		};
-
-		vreg_bob: bob {
-			regulator-min-microvolt = <3300000>;
-			regulator-max-microvolt = <3600000>;
-			regulator-enable-ramp-delay = <500>;
 		};
 	};
 };
