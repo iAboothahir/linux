@@ -481,6 +481,8 @@
 };
 
 &usb3 {
+	qcom,select-utmi-as-pipe-clk;
+
 	status = "okay";
 };
 
@@ -488,6 +490,10 @@
 	status = "okay";
 	dr_mode = "peripheral";
 	extcon = <&extcon_usb>;
+
+	maximum-speed = "high-speed";
+	phys = <&qusb2phy0>;
+	phy-names = "usb2-phy";
 };
 
 &wifi {
@@ -500,6 +506,9 @@
 
 &qusb2phy0 {
 	status = "okay";
+
+	vdd-supply = <&vreg_l1b_0p925>;
+	vdda-phy-dpdm-supply = <&vreg_l7b_3p125>;
 };
 
 &blsp_i2c2 {
