@@ -42,6 +42,10 @@
 			height = <2160>;
 			stride = <(1080 * 4)>;
 			format = "a8r8g8b8";
+
+			/* In order to allow simpledrm framebuffer to know
+			 * physical dimensions */
+			panel = <&panel>;
 		};
 	};
 
@@ -558,19 +562,25 @@
 };
 
 &mdss_dsi0 {
+	status = "okay";
+
 	#address-cells = <1>;
 	#size-cells = <0>;
+
 	vdd-supply = <&vreg_l1b_0p925>;
 	vdda-supply = <&vreg_l1a_1p225>;
-	status = "okay";
-	panel@0 {
-		compatible = "asus,nt36672-txd";
+
+	panel: panel@0 {
 		reg = <0>;
+		compatible = "asus,nt36672-txd";
 
 		backlight = <&pm660l_wled>;
-		//reset-gpios = <&tlmm XY GPIO_ACTIVE_LOW>;
+
 		reset-gpios = <&tlmm 53 GPIO_ACTIVE_HIGH>;
 		disp-te-gpios = <&tlmm 59 GPIO_ACTIVE_HIGH>;
+
+		width-mm = <68>;
+		height-mm = <136>;
 
 		pinctrl-names = "default";
 		pinctrl-0 = <&panel_reset_gpio &panel_te_gpio>;
