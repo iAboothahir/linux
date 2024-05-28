@@ -673,6 +673,10 @@
 	qcom,max-voltage-uv= <4350000>;
 };
 
+&pm660_haptics {
+	status = "okay";
+};
+
 &pm660_rradc {
 	status = "okay";
 };
