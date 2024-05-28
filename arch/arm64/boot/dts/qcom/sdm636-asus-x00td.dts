@@ -14,8 +14,6 @@
 /delete-node/ &qhee_code;
 /delete-node/ &smem_region;
 /delete-node/ &tz_mem;
-///delete-node/ &mpss_region;
-///delete-node/ &mba_region;
 /delete-node/ &adsp_region;
 /delete-node/ &buffer_mem;
 /delete-node/ &zap_shader_region;
@@ -109,21 +107,9 @@
 		}; */
 		/* which covers region starting from removed_regions to 0x88F00000 (end of our tz_mem) */
 
-		/* modem_fw_region */
-		modem_fw_mem: modem_fw_region@8ac00000 {
-			reg = <0x0 0x8ac00000 0x0 0x7e00000>;
-			no-map;
-		};
-
 		/* adsp_fw_region */
 		adsp_region: adsp@92a00000 {
 			reg = <0x0 0x92a00000 0x0 0x1e00000>;
-			no-map;
-		};
-
-		/* pil_mba_mem */
-		pil_mba_mem: mba@94800000 {
-			reg = <0x0 0x94800000 0x0 0x200000>;
 			no-map;
 		};
 
@@ -584,14 +570,6 @@
 &mdss_dsi0_phy {
 	vcca-supply = <&vreg_l1b_0p925>;
 	status = "okay";
-};
-
-&mdss_dsi1_phy {
-	status = "disabled";
-};
-
-&mdss_dsi1 {
-	status = "disabled";
 };
 
 &pm660l_wled {
